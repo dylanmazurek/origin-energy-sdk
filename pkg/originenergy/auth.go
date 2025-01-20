@@ -2,9 +2,7 @@ package originenergy
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/dylanmazurek/origin-energy-sdk/pkg/originenergy/constants"
 	"github.com/hasura/go-graphql-client"
@@ -22,6 +20,7 @@ func NewAuthClient(ctx context.Context) (*AuthClient, error) {
 
 	err := authClient.LoadToken()
 	if err != nil {
+		fmt.Printf("error loading token: %s\n", err)
 		err := authClient.NewToken(ctx)
 		if err != nil {
 			return nil, err
@@ -33,41 +32,11 @@ func NewAuthClient(ctx context.Context) (*AuthClient, error) {
 		}
 	}
 
-	authClientTransport, err := authClient.createAuthTransport()
-	if err != nil {
-		return nil, err
-	}
-
-	authClient.internalClient = authClientTransport
-
-	return authClient, nil
-}
-
-func (c *AuthClient) createAuthTransport() (*graphql.Client, error) {
-	authClient := &http.Client{
-		Transport: &addAuthHeaderTransport{
-			T:     http.DefaultTransport,
-			Token: c.token,
-		},
-	}
+	authClientTransport := oauth2Config.Client(ctx, authClient.token)
 
 	graphQlUrl := fmt.Sprintf("%s%s", constants.API_BASE_URL, constants.GRAPHQL_PATH)
-	newGraphQLClient := graphql.NewClient(graphQlUrl, authClient)
+	newGraphQLClient := graphql.NewClient(graphQlUrl, authClientTransport)
+	authClient.internalClient = newGraphQLClient
 
-	return newGraphQLClient, nil
-}
-
-type addAuthHeaderTransport struct {
-	T     http.RoundTripper
-	Token *oauth2.Token
-}
-
-func (adt *addAuthHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if adt.Token == nil {
-		return nil, errors.New("no token")
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", adt.Token.AccessToken))
-
-	return adt.T.RoundTrip(req)
+	return authClient, nil
 }

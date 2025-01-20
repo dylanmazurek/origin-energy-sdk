@@ -10,6 +10,7 @@ import (
 	"github.com/dylanmazurek/origin-energy-sdk/pkg/originenergy"
 	"github.com/dylanmazurek/origin-energy-sdk/pkg/originenergy/constants"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/markkurossi/tabulate"
 )
 

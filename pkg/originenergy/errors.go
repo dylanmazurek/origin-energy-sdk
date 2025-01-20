@@ -3,5 +3,6 @@ package originenergy
 import "errors"
 
 var (
-	ErrAgreementIDNotSet = errors.New("AGREEMENT_ID not set")
+	ErrSessionFileNotFound = errors.New("session file not found")
+	ErrAgreementIDNotSet   = errors.New("AGREEMENT_ID not set")
 )

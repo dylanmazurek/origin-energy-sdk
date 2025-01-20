@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/dylanmazurek/origin-energy-sdk/pkg/originenergy/constants"
@@ -23,7 +24,18 @@ var oauth2Config oauth2.Config = oauth2.Config{
 }
 
 func (c *AuthClient) LoadToken() error {
-	sessionFile := "session.json"
+	var sessionFile string = "session.json"
+	sesisonFileEnv, ok := os.LookupEnv("SESSION_FILE")
+	if ok {
+		log.Printf("using session file: %s\n", sesisonFileEnv)
+		sessionFile = sesisonFileEnv
+	}
+
+	_, err := os.Stat(sessionFile)
+	if os.IsNotExist(err) {
+		return ErrSessionFileNotFound
+	}
+
 	session, err := os.OpenFile(sessionFile, os.O_RDONLY, 0600)
 	if err != nil {
 		return err
@@ -41,7 +53,12 @@ func (c *AuthClient) LoadToken() error {
 }
 
 func (c *AuthClient) SaveToken() error {
-	sessionFile := "session.json"
+	var sessionFile string = "session.json"
+	sesisonFileEnv, ok := os.LookupEnv("SESSION_FILE")
+	if ok {
+		sessionFile = sesisonFileEnv
+	}
+
 	session, err := os.OpenFile(sessionFile, os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
