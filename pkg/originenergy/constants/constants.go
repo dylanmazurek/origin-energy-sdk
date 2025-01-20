@@ -1,5 +1,7 @@
 package constants
 
+import "time"
+
 const (
 	API_BASE_URL = "https://api.rx.originenergy.com.au"
 	GRAPHQL_PATH = "/v1/gateway/graphql"
@@ -34,3 +36,8 @@ const (
 )
 
 type DateTime string
+
+func (d *DateTime) FromTime(t time.Time) {
+	timeString := t.Format(time.RFC3339)
+	*d = DateTime(timeString)
+}

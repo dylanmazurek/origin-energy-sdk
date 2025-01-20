@@ -2,7 +2,6 @@ package originenergy
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/dylanmazurek/origin-energy-sdk/pkg/originenergy/constants"
@@ -11,41 +10,34 @@ import (
 )
 
 // AccountUsageFilter is a filter for the GetAccountUsage method.
-// [AgreementId] is required. StartDate defaults to 1 day ago. EndDate defaults to now. TimeUnit defaults to Hourly.
 type AccountUsageFilter struct {
+	// AgreementID is the agreement ID to query. (Required)
+	AgreementID string
+	// StartDate is the start date of the usage data. (Optional - defaults to 1 day ago)
 	StartDate time.Time
-	EndDate   time.Time
-	Type      constants.ServiceType
-	TimeUnit  constants.UsageTimeUnit
+	// EndDate is the end date of the usage data. (Optional - defaults to now)
+	EndDate time.Time
+	// Type is the service type to query. (Required)
+	Type constants.ServiceType
+	// TimeUnit is the time unit to query. (Optional - defaults to hourly)
+	TimeUnit constants.UsageTimeUnit
 }
 
 func (f *AccountUsageFilter) GetVariables() (map[string]any, error) {
-	now := time.Now()
-	defaultVariables := map[string]any{
-		"timeUnit":  constants.Hourly,
-		"startDate": constants.DateTime(now.AddDate(0, 0, -1).Format(time.RFC3339)),
-		"endDate":   constants.DateTime(now.Format(time.RFC3339)),
-	}
-
-	agreementId, agreementIdSet := os.LookupEnv("AGREEMENT_ID")
-	if !agreementIdSet {
-		return nil, ErrAgreementIDNotSet
-	}
+	var startDateStr, endDateStr constants.DateTime
+	startDateStr.FromTime(f.StartDate)
+	endDateStr.FromTime(f.EndDate)
 
 	variables := map[string]any{
-		"agreementId": agreementId,
+		"agreementId": f.AgreementID,
+		"startDate":   startDateStr,
+		"endDate":     endDateStr,
 		"type":        f.Type,
+		"timeUnit":    f.TimeUnit,
 		"electricityRateFilter": models.ElectricityRateFilter{
 			ActiveEqual: true,
 		},
 	}
-
-	for key, value := range defaultVariables {
-		if _, ok := variables[key]; !ok {
-			variables[key] = value
-		}
-	}
-
 	return variables, nil
 }
 

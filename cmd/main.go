@@ -20,22 +20,60 @@ func main() {
 		panic(err)
 	}
 
-	userAccount, err := originClient.GetUserAccount(ctx)
+	printAccountDetails(originClient)
+	printUsage(originClient)
+}
+
+func printAccountDetails(client *originenergy.Client) {
+	ctx := context.Background()
+
+	userAccount, err := client.GetUserAccount(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%s\n", userAccount.Viewer.Digital.Accounts[0].AccountID)
+	tab := tabulate.New(tabulate.Unicode)
+	tab.Header("Account Type")
+
+	row := tab.Row()
+	row.Column(userAccount.Viewer.Digital.User.CustomerType)
+
+	fmt.Println(tab.String())
+
+	tab2 := tabulate.New(tabulate.Unicode)
+	tab2.Header("Backend Service ID")
+	tab2.Header("Status")
+	tab2.Header("Type")
+
+	for _, service := range userAccount.Viewer.Digital.Services {
+		row := tab2.Row()
+		row.Column(service.BackendServiceID)
+		row.Column(service.Status)
+		row.Column(service.Type)
+	}
+
+	fmt.Println(tab2.String())
+}
+
+func printUsage(client *originenergy.Client) {
+	ctx := context.Background()
+
+	agreementId, agreementIdSet := os.LookupEnv("AGREEMENT_ID")
+	if !agreementIdSet || agreementId == "" {
+		panic(originenergy.ErrAgreementIDNotSet)
+	}
 
 	startDate := time.Now().AddDate(0, 0, -1)
 
 	filter := originenergy.AccountUsageFilter{
-		StartDate: startDate,
-		Type:      constants.EmbeddedElectricity,
-		TimeUnit:  constants.Hourly,
+		AgreementID: agreementId,
+		StartDate:   startDate,
+		EndDate:     time.Now(),
+		Type:        constants.EmbeddedElectricity,
+		TimeUnit:    constants.Hourly,
 	}
 
-	accountUsage, err := originClient.GetAccountUsage(ctx, filter)
+	accountUsage, err := client.GetAccountUsage(ctx, filter)
 	if err != nil {
 		panic(err)
 	}
@@ -84,5 +122,5 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Last Updated: %s\n", lastNotZeroDataPoint.EndDate.Format("02-01-2006 03:04PM"))
+	fmt.Printf("last updated: %s\n", lastNotZeroDataPoint.EndDate.Format("02-01-2006 03:04PM"))
 }
